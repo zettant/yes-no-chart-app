@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>chart_app</title>
+    <script>
+      // URLリダイレクト処理
+      (function() {
+        var path = window.location.pathname;
+        var correctPaths = ['/chart/', '/chart/photo', '/chart/chart', '/chart/result'];
+        var isCorrectPath = correctPaths.some(function(correctPath) {
+          return path === correctPath || path.startsWith(correctPath + '/');
+        });
+        
+        if (!isCorrectPath) {
+          if (path === '/' || path === '/chart') {
+            window.location.href = '/chart/';
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

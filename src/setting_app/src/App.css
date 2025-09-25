@@ -1,0 +1,666 @@
+/* アプリケーション全体のスタイル */
+.app-container {
+  min-height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* 共通レイアウト */
+.chart-list-container,
+.chart-create-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* チャート一覧画面 */
+.chart-list-content,
+.chart-create-content {
+  width: calc(100% - 20px);
+  max-width: none;
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  margin: 10px;
+  box-sizing: border-box;
+}
+
+.chart-list-header,
+.chart-create-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.chart-list-title,
+.chart-create-title {
+  font-size: 2.2em;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.chart-app-button,
+.create-new-button,
+.back-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.chart-app-button:hover,
+.create-new-button:hover,
+.back-button:hover {
+  background: #218838;
+  transform: translateY(-2px);
+}
+
+.create-new-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.chart-count-info {
+  background: #e9f7ef;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.chart-count-text {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #155724;
+}
+
+.chart-limit-message {
+  margin: 5px 0 0 0;
+  font-size: 0.9em;
+  color: #856404;
+}
+
+/* チャート未登録状態 */
+.no-charts-container {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.no-charts-icon {
+  font-size: 4em;
+  margin-bottom: 20px;
+}
+
+.no-charts-title {
+  font-size: 1.6em;
+  color: #495057;
+  margin-bottom: 15px;
+}
+
+.no-charts-message {
+  font-size: 1.1em;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* チャート一覧テーブル */
+.charts-table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.charts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.charts-table th {
+  background: #f8f9fa;
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.charts-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+.chart-row:hover {
+  background: #f8f9fa;
+}
+
+.chart-name-cell strong {
+  color: #333;
+  font-size: 1.1em;
+}
+
+.chart-type-badge {
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.chart-type-badge.decision {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.chart-type-badge.point {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.delete-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.3s ease;
+}
+
+.delete-button:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.delete-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ヘルプセクション */
+.help-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.help-summary {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  padding: 10px 0;
+}
+
+.help-content {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.help-content h3 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.help-content ol {
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.help-content p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* 新規登録画面 */
+.section-title {
+  font-size: 1.4em;
+  color: #333;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* ドロップゾーン */
+.dropzone-section {
+  margin-bottom: 30px;
+}
+
+.dropzone {
+  border: 2px dashed #28a745;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f8fff8;
+}
+
+.dropzone.active {
+  border-color: #20c997;
+  background: #e8f5e8;
+  transform: scale(1.02);
+}
+
+.dropzone.has-file {
+  border-color: #28a745;
+  background: #d4edda;
+}
+
+.dropzone-placeholder {
+  color: #495057;
+}
+
+.upload-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+}
+
+.dropzone-text {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.dropzone-subtext {
+  font-size: 0.9em;
+  color: #666;
+  margin: 0;
+}
+
+.dropzone-processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  color: #495057;
+}
+
+.dropzone-success {
+  color: #155724;
+}
+
+.success-icon {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+.file-name {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.file-status {
+  font-size: 0.9em;
+  margin-bottom: 15px;
+}
+
+.reset-file-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+}
+
+.reset-file-button:hover {
+  background: #5a6268;
+}
+
+/* チャートプレビュー */
+.chart-preview-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.chart-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.chart-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.chart-info-item strong {
+  font-size: 0.9em;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chart-info-item span {
+  font-size: 1.1em;
+  color: #333;
+}
+
+.questions-preview,
+.diagnoses-preview {
+  margin-top: 25px;
+}
+
+.questions-preview h3,
+.diagnoses-preview h3 {
+  color: #333;
+  font-size: 1.2em;
+  margin-bottom: 15px;
+}
+
+.questions-list,
+.diagnoses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.question-item,
+.diagnosis-item {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid #28a745;
+}
+
+.question-header,
+.diagnosis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.question-id,
+.diagnosis-id {
+  font-weight: 600;
+  color: #495057;
+}
+
+.final-question-badge {
+  background: #ffc107;
+  color: #856404;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.point-range {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.question-sentence,
+.diagnosis-sentence {
+  color: #333;
+  font-size: 1em;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.question-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice-tag {
+  background: #e9ecef;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+}
+
+.more-questions {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  margin: 0;
+  padding: 15px;
+}
+
+.expand-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+  margin: 10px auto;
+  display: block;
+}
+
+.expand-button:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+/* 保存セクション */
+.save-section {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 2px solid #dee2e6;
+}
+
+.save-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  font-size: 1.3em;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.save-button:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.save-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 登録処理中オーバーレイ */
+.registering-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.registering-modal {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.registering-text {
+  margin-top: 20px;
+  font-size: 1.1em;
+  color: #333;
+}
+
+/* 共通要素 */
+.loading-container {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 100%;
+  margin-top: 100px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #28a745;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: #495057;
+  font-size: 1.1em;
+  margin: 0;
+}
+
+.error-message-banner,
+.success-message-banner {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message-banner {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message-banner {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.error-text,
+.success-text {
+  margin: 0;
+  flex: 1;
+}
+
+.retry-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-left: 10px;
+  transition: all 0.3s ease;
+}
+
+.retry-button:hover {
+  background: #c82333;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+  .chart-list-container,
+  .chart-create-container {
+    padding: 10px;
+  }
+  
+  .chart-list-content,
+  .chart-create-content {
+    padding: 20px;
+  }
+  
+  .chart-list-header,
+  .chart-create-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .header-actions {
+    justify-content: center;
+  }
+  
+  .chart-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .question-header,
+  .diagnosis-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .charts-table-container {
+    font-size: 0.9em;
+  }
+  
+  .charts-table th,
+  .charts-table td {
+    padding: 10px 8px;
+  }
+}
