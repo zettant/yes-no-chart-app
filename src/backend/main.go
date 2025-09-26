@@ -64,6 +64,8 @@ func main() {
 	// チャートアプリ（/chart）- 具体的なパスを先に定義
 	r.Static("/chart/assets", "/app/chart_app/assets")
 	r.StaticFile("/chart/vite.svg", "/app/chart_app/vite.svg")
+	r.StaticFile("/chart/sw.js", "/app/chart_app/sw.js")
+	r.StaticFile("/chart/manifest.json", "/app/chart_app/manifest.json")
 	r.GET("/chart/photo", func(c *gin.Context) {
 		c.File("/app/chart_app/index.html")
 	})
