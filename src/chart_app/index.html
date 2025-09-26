@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yes/No Chart - 診断チャートアプリ</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/chart/manifest.json" />
+    
+    <!-- PWA Meta tags -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="診断チャートを実行するPWAアプリケーション" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Yes/No Chart" />
+    <script>
+      // URLリダイレクト処理
+      (function() {
+        var path = window.location.pathname;
+        var correctPaths = ['/chart/', '/chart/photo', '/chart/chart', '/chart/result'];
+        var isCorrectPath = correctPaths.some(function(correctPath) {
+          return path === correctPath || path.startsWith(correctPath + '/');
+        });
+        
+        if (!isCorrectPath) {
+          if (path === '/' || path === '/chart') {
+            window.location.href = '/chart/';
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

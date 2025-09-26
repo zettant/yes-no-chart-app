@@ -1,0 +1,21 @@
+{
+  "name": "Yes/No Chart - 診断チャートアプリ",
+  "short_name": "Yes/No Chart",
+  "description": "診断チャートを実行するPWAアプリケーション",
+  "start_url": "/chart/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/chart/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "ja",
+  "dir": "ltr",
+  "scope": "/chart/"
+}

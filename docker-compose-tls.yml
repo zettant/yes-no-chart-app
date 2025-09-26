@@ -1,0 +1,104 @@
+# Yes/No Chart システムのDocker Compose設定
+services:
+  # リバースプロキシサービス (rust-rpxy)
+  reverse-proxy:
+    image: jqtype/rpxy:latest
+    container_name: yes-no-chart-proxy
+    restart: unless-stopped
+    
+    # ポートマッピング（外部からのアクセスポイント）
+    ports:
+      - "443:443"     # HTTPS（将来のTLS対応用）
+    
+    # 設定ファイルとACME証明書保存のマウント
+    volumes:
+      - ./rpxy-config:/rpxy/config:ro
+      - ./volumes/acme:/rpxy/acme_registry
+    
+    # ネットワーク設定
+    networks:
+      - yes-no-chart-network
+    
+    # バックエンドサービスの起動を待つ
+    depends_on:
+      - yes-no-chart
+    
+    # ヘルスチェック設定
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # メインアプリケーションサービス
+  yes-no-chart:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yes-no-chart-app
+    restart: unless-stopped
+    
+    # 内部ポートのみ公開（プロキシ経由でアクセス）
+    expose:
+      - "80"
+
+    # ボリュームマウント設定
+    # ローカル開発のためにホストのvolumes/ディレクトリをマウント
+    volumes:
+      # バイナリとWebアプリケーション
+      - ./volumes/bin:/app/bin:ro                    # 実行ファイル（読み取り専用）
+      - ./volumes/bin/chart_app:/app/chart_app:ro    # チャートアプリ（読み取り専用）
+      - ./volumes/bin/setting_app:/app/setting_app:ro # 設定アプリ（読み取り専用）
+      
+      # データ永続化
+      - ./volumes/db:/app/db                         # SQLiteデータベース
+      - ./volumes/photos:/app/photos                 # 暗号化された写真ファイル
+    
+    # 環境変数設定
+    environment:
+      # Goアプリケーション設定
+      - GIN_MODE=release        # Ginを本番モードで実行
+      - TZ=Asia/Tokyo          # タイムゾーン設定
+      
+      # データベース設定
+      - DB_PATH=/app/db/database.db  # SQLiteデータベースファイルのパス
+      
+      # ファイルストレージ設定
+      - PHOTOS_DIR=/app/photos       # 写真保存ディレクトリ
+    
+    # ネットワーク設定
+    networks:
+      - yes-no-chart-network
+    
+    # ヘルスチェック設定（Dockerfileの設定を上書き）
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # リソース制限設定（本番環境向け）
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'      # CPU使用量制限
+          memory: 512M     # メモリ使用量制限
+        reservations:
+          cpus: '0.25'     # CPU予約量
+          memory: 128M     # メモリ予約量
+
+# ネットワーク設定
+networks:
+  yes-no-chart-network:
+    driver: bridge
+    name: yes-no-chart-network
+
+# ボリューム設定（名前付きボリュームを使用する場合）
+# 現在の設定ではホストディレクトリを直接マウントしているため未使用
+# volumes:
+#   yes-no-chart-db:
+#     driver: local
+#   yes-no-chart-photos:
+#     driver: local
