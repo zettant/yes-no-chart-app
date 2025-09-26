@@ -5,6 +5,21 @@ import { saveSelectedChart, clearAllStorage, saveCurrentResult } from '../storag
 import type { IChart, IResult } from '../types';
 
 /**
+ * 現在時刻をJST（日本標準時）のISO8601形式文字列として取得する
+ * @returns JST時刻のISO8601形式文字列（例: "2024-12-25T15:30:45+09:00"）
+ */
+const getCurrentJSTTimestamp = (): string => {
+  const now = new Date();
+  
+  // 日本時間に変換（UTC + 9時間）
+  const jstOffset = 9 * 60; // 9時間を分で表現
+  const jstTime = new Date(now.getTime() + (jstOffset * 60 * 1000));
+  
+  // ISO8601形式にしてタイムゾーン情報を日本時間として設定
+  return jstTime.toISOString().replace('Z', '+09:00');
+};
+
+/**
  * チャート選択画面コンポーネント
  * 保存済みのチャートから選択して写真登録画面に遷移
  */
@@ -69,7 +84,7 @@ const ChartSelection: React.FC = () => {
       const resultData: IResult = {
         chartName: chart.name,
         chartType: chart.type,
-        timestamp: new Date().toISOString(),  // 現在時刻をISO8601形式で設定
+        timestamp: getCurrentJSTTimestamp(),  // 現在時刻をJST（日本標準時）で設定
         photo: '',  // 写真は写真登録画面で設定
         currentQId: chart.questions[0]?.id,  // 最初の設問IDを設定
         currentPoint: chart.type === 'point' ? 0 : undefined,  // ポイント型の場合は0で初期化

@@ -37,7 +37,7 @@ export interface IHistory {
 export interface IResult {
   chartName: string;      // チャート名
   chartType: string;      // チャートタイプ
-  timestamp: string;      // 開始時刻（ISO8601フォーマット）
+  timestamp: string;      // 開始時刻（JST、ISO8601フォーマット）
   photo: string;          // 撮影データJPEGのBase64文字列
   currentQId?: number;    // 現在の設問ID
   currentPoint?: number;  // 現時点の点数(チャートタイプ=pointの場合のみ)

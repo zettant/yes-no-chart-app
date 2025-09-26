@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"math/big"
 )
@@ -36,24 +37,24 @@ func HashPassphrase(passphrase string) []byte {
 }
 
 // EncryptImage - 画像データ（Base64文字列）をAES256-CTRで暗号化
-// Base64デコード → 暗号化 → Base64エンコードの流れで処理
-func EncryptImage(imageBase64 string, key []byte) (string, error) {
-	// Base64デコード
+// Base64デコード → 暗号化 → バイナリデータ返却の流れで処理
+func EncryptImage(imageBase64 string, key []byte) ([]byte, error) {
+	// Base64デコードしてバイナリデータにする
 	imageData, err := base64.StdEncoding.DecodeString(imageBase64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// AES暗号化オブジェクト作成
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// CTRモード用の初期化ベクトル（IV）を生成
 	iv := make([]byte, aes.BlockSize)
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// CTRモードで暗号化
@@ -61,26 +62,20 @@ func EncryptImage(imageBase64 string, key []byte) (string, error) {
 	encrypted := make([]byte, len(imageData))
 	stream.XORKeyStream(encrypted, imageData)
 
-	// IV + 暗号化データを連結してBase64エンコード
+	// IV + 暗号化データを連結してバイナリデータとして返却
 	result := append(iv, encrypted...)
-	return base64.StdEncoding.EncodeToString(result), nil
+	return result, nil
 }
 
 // DecryptImage - 暗号化された画像データを復号化（管理用）
-// 実際のアプリでは使用しないが、デバッグ・管理用途で実装
-func DecryptImage(encryptedBase64 string, key []byte) (string, error) {
-	// Base64デコード
-	data, err := base64.StdEncoding.DecodeString(encryptedBase64)
-	if err != nil {
-		return "", err
-	}
-
+// バイナリデータを受け取り、復号化してBase64文字列として返却
+func DecryptImage(encryptedData []byte, key []byte) (string, error) {
 	// IV（先頭16バイト）と暗号化データを分離
-	if len(data) < aes.BlockSize {
-		return "", err
+	if len(encryptedData) < aes.BlockSize {
+		return "", fmt.Errorf("暗号化データが短すぎます")
 	}
-	iv := data[:aes.BlockSize]
-	encryptedData := data[aes.BlockSize:]
+	iv := encryptedData[:aes.BlockSize]
+	ciphertext := encryptedData[aes.BlockSize:]
 
 	// AES暗号化オブジェクト作成
 	block, err := aes.NewCipher(key)
@@ -90,8 +85,8 @@ func DecryptImage(encryptedBase64 string, key []byte) (string, error) {
 
 	// CTRモードで復号化
 	stream := cipher.NewCTR(block, iv)
-	decrypted := make([]byte, len(encryptedData))
-	stream.XORKeyStream(decrypted, encryptedData)
+	decrypted := make([]byte, len(ciphertext))
+	stream.XORKeyStream(decrypted, ciphertext)
 
 	// Base64エンコードして返却
 	return base64.StdEncoding.EncodeToString(decrypted), nil

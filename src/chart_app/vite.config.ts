@@ -13,14 +13,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    // SPAのフォールバック設定
-    historyApiFallback: {
-      rewrites: [
-        // すべてのルートを /chart/ にリダイレクト
-        { from: /^\/(?!chart\/).*$/, to: '/chart/' },
-        { from: /^\/chart$/, to: '/chart/' },
-      ]
-    }
   },
   // ベースパス設定（/chartでホスティングされる）
   base: '/chart/',

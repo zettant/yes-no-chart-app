@@ -1,10 +1,16 @@
 # Yes/No Chart システムのMakefile
 # ビルド、デプロイ、Docker管理を自動化
+#
+# 注意事項:
+# - Go 1.25.1が必要です
+# - toolchainエラーが発生した場合は、新しいターミナルを開くか以下を実行してください:
+#   unset GOROOT
 
 # 変数定義
 BACKEND_DIR = src/backend
 CHART_APP_DIR = src/chart_app
 SETTING_APP_DIR = src/setting_app
+TOOL_DIR = src/tool
 VOLUMES_BIN_DIR = volumes/bin
 VOLUMES_CHART_DIR = $(VOLUMES_BIN_DIR)/chart_app
 VOLUMES_SETTING_DIR = $(VOLUMES_BIN_DIR)/setting_app
@@ -21,7 +27,8 @@ help:
 	@echo "    build-server   - バックエンドサーバをビルドしてvolumes/bin/にデプロイ"
 	@echo "    build-chart    - チャートアプリをビルドしてvolumes/bin/chart_app/にデプロイ"
 	@echo "    build-setting  - 設定アプリをビルドしてvolumes/bin/setting_app/にデプロイ"
-	@echo "    build          - 全てのコンポーネントをビルド"
+	@echo "    build-tool     - 集計ツールをビルドしてプロジェクトルートにコピー"
+	@echo "    build          - 全てのコンポーネント（サーバ、アプリ、ツール）をビルド"
 	@echo ""
 	@echo "  クリーンアップ:"
 	@echo "    clean          - ビルド成果物とvolumes/bin/を削除"
@@ -55,9 +62,9 @@ build-server: $(VOLUMES_BIN_DIR)
 	@echo "🔨 バックエンドサーバーをビルド中..."
 	@cd $(BACKEND_DIR) && \
 		echo "  - Go依存関係を解決中..." && \
-		go mod tidy && \
+		GOTOOLCHAIN=local go mod tidy && \
 		echo "  - Linuxバイナリをビルド中..." && \
-		GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -ldflags '-w -s' -o ../../$(VOLUMES_BIN_DIR)/backend .
+		GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -ldflags '-w -s' -o ../../$(VOLUMES_BIN_DIR)/backend .
 	@echo "✅ バックエンドサーバーのビルドが完了: $(VOLUMES_BIN_DIR)/backend"
 
 # チャートアプリのビルド
@@ -92,14 +99,26 @@ build-setting: $(VOLUMES_SETTING_DIR)
 	@cp -r $(SETTING_APP_DIR)/dist/* $(VOLUMES_SETTING_DIR)/
 	@echo "✅ 設定アプリのビルドが完了: $(VOLUMES_SETTING_DIR)"
 
+# 集計ツールのビルド
+.PHONY: build-tool
+build-tool:
+	@echo "🔨 集計ツールをビルド中..."
+	@cd $(TOOL_DIR) && \
+		echo "  - Go依存関係を解決中..." && \
+		GOTOOLCHAIN=local go mod tidy && \
+		echo "  - macOS用バイナリをビルド中..." && \
+		GOTOOLCHAIN=local GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -a -ldflags '-w -s' -o ../../aggregation-tool .
+	@echo "✅ 集計ツールのビルドが完了: ./aggregation-tool"
+
 # 全コンポーネントのビルド
 .PHONY: build
-build: build-server build-chart build-setting
+build: build-server build-chart build-setting build-tool
 	@echo ""
 	@echo "🎉 全てのコンポーネントのビルドが完了しました！"
 	@echo "   - バックエンドサーバー: $(VOLUMES_BIN_DIR)/backend"
 	@echo "   - チャートアプリ: $(VOLUMES_CHART_DIR)"
 	@echo "   - 設定アプリ: $(VOLUMES_SETTING_DIR)"
+	@echo "   - 集計ツール: ./aggregation-tool"
 
 # クリーンアップ（ビルド成果物のみ）
 .PHONY: clean
@@ -108,6 +127,7 @@ clean:
 	@rm -rf $(VOLUMES_BIN_DIR)
 	@rm -rf $(CHART_APP_DIR)/dist
 	@rm -rf $(SETTING_APP_DIR)/dist
+	@rm -f ./aggregation-tool
 	@echo "✅ クリーンアップが完了しました"
 
 # 深いクリーンアップ（node_modules含む）

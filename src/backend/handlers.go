@@ -134,7 +134,7 @@ func SaveResultHandler(db *gorm.DB) gin.HandlerFunc {
 		// パスフレーズをハッシュ化してAES暗号化キーを生成
 		encryptionKey := HashPassphrase(passphrase)
 
-		// 写真データを暗号化
+		// 写真データを暗号化（Base64デコード → AES256-CTR暗号化 → バイナリデータ）
 		encryptedPhoto, err := EncryptImage(requestData.Photo, encryptionKey)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "写真の暗号化に失敗しました"})
@@ -163,7 +163,7 @@ func SaveResultHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 暗号化された写真をファイルとして保存
+		// 暗号化された写真をバイナリファイルとして保存
 		// ファイル名は登録レコードのIDと同じにする
 		photosDir := "/app/photos"
 		if err := os.MkdirAll(photosDir, 0755); err != nil {
@@ -172,7 +172,7 @@ func SaveResultHandler(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		photoFilePath := filepath.Join(photosDir, fmt.Sprintf("%d", result.ID))
-		if err := os.WriteFile(photoFilePath, []byte(encryptedPhoto), 0644); err != nil {
+		if err := os.WriteFile(photoFilePath, encryptedPhoto, 0644); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "写真ファイルの保存に失敗しました"})
 			return
 		}

@@ -47,7 +47,7 @@ make start
 ## 開発環境
 
 ### 必要な環境
-- Go 1.22.4以上
+- Go 1.25.1以上
 - Node.js 18以上
 - Docker & Docker Compose
 - Make
