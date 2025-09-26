@@ -2,8 +2,7 @@ import type { IChart, IResult } from './types';
 import { indexedDBHelper } from './indexeddb';
 import { saveOfflineCharts, getOfflineCharts } from './storage';
 
-// APIベースURL - 環境に応じて設定
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost';
+// API calls use relative paths - same domain as the app
 
 /**
  * チャート一覧取得API
@@ -13,7 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost';
  */
 export const fetchCharts = async (): Promise<string[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/charts`, {
+    const response = await fetch('/api/charts', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +54,7 @@ export const fetchCharts = async (): Promise<string[]> => {
  */
 export const saveResult = async (resultData: IResult): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/save`, {
+    const response = await fetch('/api/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +99,7 @@ export const syncOfflineResults = async (): Promise<void> => {
         // ID と createdAt を除いてサーバに送信
         const { id, createdAt, ...resultData } = offlineResult;
         
-        const response = await fetch(`${API_BASE_URL}/api/save`, {
+        const response = await fetch('/api/save', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -1,6 +1,13 @@
-# rust-rpxy configuration for Yes/No Chart system
+# rust-rpxy configuration for Yes/No Chart system with TLS/Let's Encrypt
 listen_port = 80
+listen_port_tls = 443
 
 [apps.app]
 server_name = 'localhost'
+#tls = { https_redirection = true, acme = true }
 reverse_proxy = [{ upstream = [{ location = 'yes-no-chart-app:80' }] }]
+
+## Global ACME settings for Let's Encrypt
+#[experimental.acme]
+#email = "admin@localhost"
+#registry_path = "/rpxy/acme_registry"

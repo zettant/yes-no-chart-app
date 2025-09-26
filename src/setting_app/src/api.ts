@@ -1,7 +1,6 @@
 import type { IChart } from './types';
 
-// APIベースURL - 環境に応じて設定
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost';
+// API calls use relative paths - same domain as the app
 
 /**
  * チャート一覧取得API
@@ -10,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost';
  */
 export const fetchCharts = async (): Promise<string[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/charts`, {
+    const response = await fetch('/api/charts', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -35,7 +34,7 @@ export const fetchCharts = async (): Promise<string[]> => {
  */
 export const registerChart = async (chartData: IChart): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/register`, {
+    const response = await fetch('/api/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,7 +62,7 @@ export const registerChart = async (chartData: IChart): Promise<void> => {
  */
 export const deleteChart = async (chartName: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/charts/${encodeURIComponent(chartName)}`, {
+    const response = await fetch(`/api/charts/${encodeURIComponent(chartName)}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

@@ -106,8 +106,13 @@ build-tool:
 	@cd $(TOOL_DIR) && \
 		echo "  - Go依存関係を解決中..." && \
 		GOTOOLCHAIN=local go mod tidy && \
-		echo "  - macOS用バイナリをビルド中..." && \
-		GOTOOLCHAIN=local GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -a -ldflags '-w -s' -o ../../aggregation-tool .
+		if [ "$$(uname)" = "Darwin" ]; then \
+			echo "  - macOS用バイナリをビルド中..."; \
+			GOTOOLCHAIN=local GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -a -ldflags '-w -s' -o ../../aggregation-tool .; \
+		else \
+			echo "  - Linux用バイナリをビルド中..."; \
+			GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -ldflags '-w -s' -o ../../aggregation-tool .; \
+		fi
 	@echo "✅ 集計ツールのビルドが完了: ./aggregation-tool"
 
 # 全コンポーネントのビルド
