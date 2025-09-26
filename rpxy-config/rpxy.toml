@@ -1,0 +1,6 @@
+# rust-rpxy configuration for Yes/No Chart system
+listen_port = 80
+
+[apps.app]
+server_name = 'localhost'
+reverse_proxy = [{ upstream = [{ location = 'yes-no-chart-app:80' }] }]

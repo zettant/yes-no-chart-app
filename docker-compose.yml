@@ -1,5 +1,36 @@
 # Yes/No Chart システムのDocker Compose設定
 services:
+  # リバースプロキシサービス (rust-rpxy)
+  reverse-proxy:
+    image: jqtype/rpxy:latest
+    container_name: yes-no-chart-proxy
+    restart: unless-stopped
+    
+    # ポートマッピング（外部からのアクセスポイント）
+    ports:
+      - "80:80"       # HTTP
+      - "443:443"     # HTTPS（将来のTLS対応用）
+    
+    # 設定ファイルのマウント
+    volumes:
+      - ./rpxy-config:/rpxy/config:ro
+    
+    # ネットワーク設定
+    networks:
+      - yes-no-chart-network
+    
+    # バックエンドサービスの起動を待つ
+    depends_on:
+      - yes-no-chart
+    
+    # ヘルスチェック設定
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
   # メインアプリケーションサービス
   yes-no-chart:
     build:
@@ -8,9 +39,9 @@ services:
     container_name: yes-no-chart-app
     restart: unless-stopped
     
-    # ポートマッピング
-    ports:
-      - "80:80"       # アプリコンテンツ用（HTTP）
+    # 内部ポートのみ公開（プロキシ経由でアクセス）
+    expose:
+      - "80"
 
     # ボリュームマウント設定
     # ローカル開発のためにホストのvolumes/ディレクトリをマウント
