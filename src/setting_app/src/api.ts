@@ -1,7 +1,7 @@
 import type { IChart } from './types';
 
 // APIベースURL - 環境に応じて設定
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:15000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost';
 
 /**
  * チャート一覧取得API

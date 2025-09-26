@@ -92,37 +92,9 @@ func main() {
 		c.Redirect(301, "/chart/")
 	})
 
-	// HTTPサーバー起動（port 80）
-	log.Println("アプリコンテンツサーバーを port 80 で起動中...")
-	go func() {
-		if err := r.Run(":80"); err != nil {
-			log.Fatal("アプリコンテンツサーバーの起動に失敗しました:", err)
-		}
-	}()
-
-	// REST APIサーバー起動（port 15000）
-	apiRouter := gin.Default()
-	
-	// CORS設定（REST API用）
-	apiRouter.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
-		AllowMethods:     []string{"GET", "POST", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	}))
-
-	// REST API エンドポイントの再定義（専用ポート用）
-	apiGroup := apiRouter.Group("/api")
-	{
-		apiGroup.GET("/charts", GetChartsHandler(db))
-		apiGroup.POST("/register", RegisterChartHandler(db))
-		apiGroup.DELETE("/charts/:name", DeleteChartHandler(db))
-		apiGroup.POST("/save", SaveResultHandler(db))
-	}
-
-	log.Println("REST API サーバーを port 15000 で起動中...")
-	if err := apiRouter.Run(":15000"); err != nil {
-		log.Fatal("REST API サーバーの起動に失敗しました:", err)
+	// HTTPサーバー起動（port 80でアプリコンテンツとREST API両方を提供）
+	log.Println("サーバーを port 80 で起動中（アプリコンテンツ + REST API）...")
+	if err := r.Run(":80"); err != nil {
+		log.Fatal("サーバーの起動に失敗しました:", err)
 	}
 }
