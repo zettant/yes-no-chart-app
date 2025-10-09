@@ -22,9 +22,11 @@ func generateCSV(results []Result, chart *IChart, csvFilePath string) error {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// ヘッダー行を書き出し
-	// 最初の5カラム：ID,時刻,結果番号,文章,選択履歴
-	header := []string{"ID", "時刻", "結果番号", "文章", "選択履歴"}
+	// チャートタイプに応じてヘッダー行を生成
+	header, err := buildCSVHeader(chart)
+	if err != nil {
+		return fmt.Errorf("ヘッダー生成エラー: %v", err)
+	}
 	if err := writer.Write(header); err != nil {
 		return fmt.Errorf("ヘッダー書き出しエラー: %v", err)
 	}
@@ -47,8 +49,55 @@ func generateCSV(results []Result, chart *IChart, csvFilePath string) error {
 	return nil
 }
 
+// buildCSVHeader: チャートタイプに応じてCSVヘッダーを生成する
+func buildCSVHeader(chart *IChart) ([]string, error) {
+	switch chart.Type {
+	case "decision":
+		// decisionタイプ: ID,時刻,結果番号,文章,選択履歴
+		return []string{"ID", "時刻", "結果番号", "文章", "選択履歴"}, nil
+	
+	case "single", "multi":
+		// single/multiタイプ: ID,時刻,カテゴリ名,ポイント,結果文章を繰り返し
+		header := []string{"ID", "時刻"}
+		
+		// チャートからカテゴリ一覧を取得（questionsから重複除去）
+		categoryMap := make(map[string]bool)
+		var categories []string
+		for _, question := range chart.Questions {
+			if !categoryMap[question.Category] {
+				categoryMap[question.Category] = true
+				categories = append(categories, question.Category)
+			}
+		}
+		
+		// 各カテゴリに対してヘッダーを追加
+		for i := range categories {
+			categoryNum := fmt.Sprintf("%d番目", i+1)
+			header = append(header, categoryNum+"カテゴリ名前", categoryNum+"カテゴリのポイント", categoryNum+"カテゴリの結果文章")
+		}
+		
+		return header, nil
+		
+		
+	default:
+		return nil, fmt.Errorf("未知のチャートタイプ: %s", chart.Type)
+	}
+}
+
 // buildCSVRow: 単一の診断結果からCSV行データを構築する
 func buildCSVRow(result *Result, chart *IChart) ([]string, error) {
+	switch chart.Type {
+	case "decision":
+		return buildCSVRowDecision(result, chart)
+	case "single", "multi":
+		return buildCSVRowPoint(result, chart)
+	default:
+		return nil, fmt.Errorf("未知のチャートタイプ: %s", chart.Type)
+	}
+}
+
+// buildCSVRowDecision: decisionタイプのCSV行を構築
+func buildCSVRowDecision(result *Result, chart *IChart) ([]string, error) {
 	// 基本情報（最初の4カラム）を設定
 	row := []string{
 		strconv.Itoa(int(result.ID)),    // ID
@@ -71,7 +120,109 @@ func buildCSVRow(result *Result, chart *IChart) ([]string, error) {
 	}
 
 	// 選択履歴を設問ID,選択肢番号の形式でCSVに追加
-	// 5番目のカラムから設問IDと選択肢番号を交互に配置
+	for _, h := range history {
+		row = append(row, strconv.Itoa(h.QuestionID)) // 設問ID
+		row = append(row, strconv.Itoa(h.Choise))     // 選択肢番号
+	}
+
+	return row, nil
+}
+
+// buildCSVRowPoint: pointタイプのCSV行を構築
+func buildCSVRowPoint(result *Result, chart *IChart) ([]string, error) {
+	// 基本情報（最初の2カラム）を設定
+	row := []string{
+		strconv.Itoa(int(result.ID)),    // ID
+		result.Timestamp,                // 時刻
+	}
+
+	// Pointフィールドの形式を判定（単一値か配列か）
+	if result.Point == "" || result.Point == "0" {
+		// データ不完全の場合
+		categoryMap := make(map[string]bool)
+		var categories []string
+		for _, question := range chart.Questions {
+			if !categoryMap[question.Category] {
+				categoryMap[question.Category] = true
+				categories = append(categories, question.Category)
+			}
+		}
+		
+		for _, category := range categories {
+			row = append(row, category, "0", "データ不完全")
+		}
+	} else {
+		// まず配列形式（複数カテゴリ）として解析を試す
+		var points []IPoint
+		if err := json.Unmarshal([]byte(result.Point), &points); err == nil {
+			// 複数カテゴリ形式の処理
+			categoryMap := make(map[string]bool)
+			var categories []string
+			for _, question := range chart.Questions {
+				if !categoryMap[question.Category] {
+					categoryMap[question.Category] = true
+					categories = append(categories, question.Category)
+				}
+			}
+
+			// 各カテゴリの情報を追加
+			for _, category := range categories {
+				var categoryPoint int
+				var categoryDiagnosis string = "診断結果なし"
+				
+				for _, point := range points {
+					if point.Category == category {
+						categoryPoint = point.Point
+						// 診断結果を検索
+						scaledPoint := point.Point / 2
+						if scaledPoint > 5 {
+							scaledPoint = 5
+						}
+						for _, diagnosis := range chart.Diagnoses {
+							if diagnosis.Category == point.Category && 
+							   scaledPoint >= diagnosis.Lower && 
+							   scaledPoint <= diagnosis.Upper {
+								categoryDiagnosis = diagnosis.Sentence
+								break
+							}
+						}
+						break
+					}
+				}
+				
+				row = append(row, category, strconv.Itoa(categoryPoint), categoryDiagnosis)
+			}
+		} else {
+			// 単一値形式として解析を試す
+			var singlePoint int
+			if err := json.Unmarshal([]byte(result.Point), &singlePoint); err == nil {
+				// 単一値の場合でも、複数カテゴリ形式でCSV出力
+				categoryMap := make(map[string]bool)
+				var categories []string
+				for _, question := range chart.Questions {
+					if !categoryMap[question.Category] {
+						categoryMap[question.Category] = true
+						categories = append(categories, question.Category)
+					}
+				}
+				
+				// 全カテゴリに同じポイントを設定（簡略化）
+				for _, category := range categories {
+					row = append(row, category, strconv.Itoa(singlePoint), "単一値形式データ")
+				}
+			} else {
+				return nil, fmt.Errorf("Pointフィールドの解析に失敗: %s", result.Point)
+			}
+		}
+	}
+
+	// 選択履歴をJSONから解析して追加
+	var history []IHistory
+	if err := json.Unmarshal([]byte(result.ChooseHistory), &history); err != nil {
+		return nil, fmt.Errorf("選択履歴JSON解析エラー: %v", err)
+	}
+
+	// 選択履歴を設問ID,選択肢番号の形式でCSVに追加
 	for _, h := range history {
 		row = append(row, strconv.Itoa(h.QuestionID)) // 設問ID
 		row = append(row, strconv.Itoa(h.Choise))     // 選択肢番号
@@ -98,14 +249,48 @@ func getResultText(result *Result, chart *IChart) (string, error) {
 		}
 		return "", fmt.Errorf("診断結果ID %d が見つかりません", resultID)
 
-	case "point":
-		// ポイントタイプ：獲得ポイントに応じた診断結果を検索
-		for _, diagnosis := range chart.Diagnoses {
-			if result.Point >= diagnosis.Lower && result.Point <= diagnosis.Upper {
-				return diagnosis.Sentence, nil
+	case "single", "multi":
+		// single/multiタイプ：Pointフィールドから獲得ポイントを解析して診断結果を検索
+		// まず単一値として解析を試す
+		var singlePoint int
+		if err := json.Unmarshal([]byte(result.Point), &singlePoint); err == nil {
+			for _, diagnosis := range chart.Diagnoses {
+				if singlePoint >= diagnosis.Lower && singlePoint <= diagnosis.Upper {
+					return diagnosis.Sentence, nil
+				}
 			}
+			return "", fmt.Errorf("ポイント %d に対応する診断結果が見つかりません", singlePoint)
 		}
-		return "", fmt.Errorf("ポイント %d に対応する診断結果が見つかりません", result.Point)
+		
+		// 複数カテゴリ形式として解析を試す
+		var points []IPoint
+		if err := json.Unmarshal([]byte(result.Point), &points); err == nil {
+			resultText := ""
+			for i, point := range points {
+				scaledPoint := point.Point / 2
+				if scaledPoint > 5 {
+					scaledPoint = 5
+				}
+				for _, diagnosis := range chart.Diagnoses {
+					if diagnosis.Category == point.Category && 
+					   scaledPoint >= diagnosis.Lower && 
+					   scaledPoint <= diagnosis.Upper {
+						if i > 0 {
+							resultText += " | "
+						}
+						resultText += fmt.Sprintf("%s: %s", point.Category, diagnosis.Sentence)
+						break
+					}
+				}
+			}
+			if resultText == "" {
+				return "", fmt.Errorf("カテゴリ別ポイントに対応する診断結果が見つかりません")
+			}
+			return resultText, nil
+		}
+		
+		return "", fmt.Errorf("Pointフィールドの解析に失敗: %s", result.Point)
+
 
 	default:
 		return "", fmt.Errorf("未知のチャートタイプ: %s", chart.Type)

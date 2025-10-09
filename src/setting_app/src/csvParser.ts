@@ -74,8 +74,8 @@ export const parseCSVToChart = (csvText: string): IChart => {
     errors.push({ row: 1, field: 'チャート名', message: 'チャート名が入力されていません' });
   }
   
-  if (chartType !== 'decision' && chartType !== 'point') {
-    errors.push({ row: 2, field: 'チャートタイプ', message: 'チャートタイプは"decision"または"point"を指定してください' });
+  if (chartType !== 'decision' && chartType !== 'single' && chartType !== 'multi') {
+    errors.push({ row: 2, field: 'チャートタイプ', message: 'チャートタイプは"decision"、"single"、または"multi"を指定してください' });
   }
   
   // 空行をスキップして設問パートを探索
@@ -198,18 +198,19 @@ export const parseCSVToChart = (csvText: string): IChart => {
 /**
  * 設問行をIQuestion型にパース
  * @param fields - CSVフィールド配列
- * @param rowNumber - 行番号（エラー表示用）
+ * @param chartType - チャートタイプ
  * @returns IQuestion型オブジェクト
  */
 const parseQuestionRow = (fields: string[], chartType: string): IQuestion => {
-  // フィールド数の確認と不足分の補完（13フィールド必要：ID、最終フラグ、設問文、選択肢1-5、遷移先1-5）
-  while (fields.length < 13) {
+  // フィールド数の確認と不足分の補完（14フィールド必要：ID、最終フラグ、カテゴリ、設問文、選択肢1-5、遷移先/ポイント1-5）
+  while (fields.length < 14) {
     fields.push('');
   }
   
   const id = parseInt(fields[0], 10);
   const isLast = fields[1] === '1';
-  const sentence = fields[2];
+  const category = fields[2] || 'default'; // カテゴリフィールドを追加
+  const sentence = fields[3]; // インデックスを1つずらす
   
   // 選択肢を取得（空文字でないもののみ）
   const choises: string[] = [];
@@ -217,10 +218,10 @@ const parseQuestionRow = (fields: string[], chartType: string): IQuestion => {
   const points: number[] = [];  // ポイント型チャート用
   
   for (let i = 0; i < 5; i++) {
-    const choiceText = fields[3 + i]?.trim();
-    const nextIdText = fields[8 + i]?.trim();
+    const choiceText = fields[4 + i]?.trim(); // インデックスを1つずらす
+    const nextIdText = fields[9 + i]?.trim(); // インデックスを1つずらす
     
-    console.log(`選択肢${i + 1}: "${choiceText}", 遷移先${i + 1}: "${nextIdText}"`);
+    console.log(`選択肢${i + 1}: "${choiceText}", 遷移先/ポイント${i + 1}: "${nextIdText}"`);
     
     if (choiceText && choiceText !== '') {
       choises.push(choiceText);
@@ -228,21 +229,25 @@ const parseQuestionRow = (fields: string[], chartType: string): IQuestion => {
       if (nextIdText && nextIdText !== '') {
         const nextId = parseInt(nextIdText, 10);
         if (isNaN(nextId)) {
-          throw new Error(`選択肢${i + 1}の遷移先が数値ではありません`);
+          throw new Error(`選択肢${i + 1}の遷移先/ポイントが数値ではありません`);
         }
         
-        // ポイント型チャートの場合、遷移先の値をポイントとして使用
-        if (chartType === 'point') {
+        if (chartType === 'decision') {
+          // decisionタイプ：遷移先はそのまま次の設問IDまたは診断結果ID
+          nexts.push(nextId);
+        } else if (chartType === 'single' || chartType === 'multi') {
+          // single/multiタイプ：遷移先の値をポイントとして使用
           points.push(nextId);
           // 次の設問IDは現在のID + 1（順次進行）
           nexts.push(id + 1);
         } else {
-          // 判定型チャートの場合、遷移先はそのまま次の設問ID
-          nexts.push(nextId);
+          // 旧来のpointタイプ（後方互換性のため保持）
+          points.push(nextId);
+          nexts.push(id + 1);
         }
       } else {
         // 遷移先が空の場合はエラー（選択肢がある場合は遷移先必須）
-        throw new Error(`選択肢${i + 1}の遷移先が設定されていません`);
+        throw new Error(`選択肢${i + 1}の遷移先/ポイントが設定されていません`);
       }
     }
   }
@@ -267,13 +272,14 @@ const parseQuestionRow = (fields: string[], chartType: string): IQuestion => {
   const question: IQuestion = {
     id,
     isLast,
+    category,
     sentence,
     choises,
     nexts
   };
   
-  // ポイント型チャートの場合のみpoints配列を追加
-  if (chartType === 'point' && points.length > 0) {
+  // ポイントを使用するチャートタイプの場合のみpoints配列を追加
+  if ((chartType === 'single' || chartType === 'multi') && points.length > 0) {
     question.points = points;
   }
   
@@ -283,26 +289,26 @@ const parseQuestionRow = (fields: string[], chartType: string): IQuestion => {
 /**
  * 診断結果行をIDiagnosis型にパース
  * @param fields - CSVフィールド配列
- * @param rowNumber - 行番号（エラー表示用）
  * @param chartType - チャートタイプ
  * @returns IDiagnosis型オブジェクト
  */
 const parseDiagnosisRow = (fields: string[], chartType: string): IDiagnosis => {
-  // フィールド数の不足分を空文字で補完（最低4フィールド必要：ID、下限、上限、文章）
-  while (fields.length < 4) {
+  // フィールド数の不足分を空文字で補完（最低5フィールド必要：ID、カテゴリ、下限、上限、文章）
+  while (fields.length < 5) {
     fields.push('');
   }
   
   const id = parseInt(fields[0], 10);
-  const sentence = fields[3];
+  const category = fields[1] || 'default'; // カテゴリフィールドを追加
+  const sentence = fields[4]; // インデックスを1つずらす
   
   let lower = 0;
   let upper = 0;
   
-  // ポイント型の場合のみポイント範囲を設定
-  if (chartType === 'point') {
-    const lowerText = fields[1]?.trim();
-    const upperText = fields[2]?.trim();
+  // ポイントを使用するチャートタイプの場合のみポイント範囲を設定
+  if (chartType === 'single' || chartType === 'multi') {
+    const lowerText = fields[2]?.trim();
+    const upperText = fields[3]?.trim();
     
     if (lowerText) {
       lower = parseInt(lowerText, 10);
@@ -330,6 +336,7 @@ const parseDiagnosisRow = (fields: string[], chartType: string): IDiagnosis => {
   
   return {
     id,
+    category,
     lower,
     upper,
     sentence

@@ -5,6 +5,7 @@
 export interface IQuestion {
   id: number;       // 設問ID
   isLast: boolean;  // trueなら最終問題
+  category: string; // 問題カテゴリ（multiタイプで使用）
   sentence: string; // 設問文
   choises: string[]; // 選択肢（1〜5）
   nexts: number[];   // 遷移先の設問ID（またはisLast=trueなら診断結果ID）
@@ -14,6 +15,7 @@ export interface IQuestion {
 // 診断結果インターフェース
 export interface IDiagnosis {
   id: number;       // 診断結果ID
+  category: string; // 対象カテゴリ（multiタイプで使用）
   lower: number;    // ポイント下限
   upper: number;    // ポイント上限
   sentence: string; // 診断結果の文章
@@ -22,7 +24,7 @@ export interface IDiagnosis {
 // チャートインターフェース
 export interface IChart {
   name: string;          // チャート名
-  type: string;          // チャートタイプ（decision/point）
+  type: string;          // チャートタイプ（decision/single/multi）
   questions: IQuestion[]; // 設問一覧
   diagnoses: IDiagnosis[]; // 診断結果一覧
 }
@@ -33,6 +35,12 @@ export interface IHistory {
   choise: number;     // 選択番号
 }
 
+// ポイント管理インターフェース（multiタイプ用）
+export interface IPoint {
+  category: string;   // 設問カテゴリ（singleの場合は"default"）
+  point: number;      // カテゴリごとに点数を加算
+}
+
 // 診断結果保存データインターフェース
 export interface IResult {
   chartName: string;      // チャート名
@@ -40,7 +48,8 @@ export interface IResult {
   timestamp: string;      // 開始時刻（JST、ISO8601フォーマット）
   photo: string;          // 撮影データJPEGのBase64文字列
   currentQId?: number;    // 現在の設問ID
-  currentPoint?: number;  // 現時点の点数(チャートタイプ=pointの場合のみ)
-  diagnosisId?: number;   // 診断結果ID(結果まで到達した場合に記入)
+  currentPoint?: number;  // 現時点の点数（singleタイプ用、後方互換）
+  currentPoints?: IPoint[]; // 現時点の点数（multiタイプ用）
+  diagnosisId?: number;   // 診断結果ID（結果まで到達した場合に記入）
   history: IHistory[];    // 何を選択してきたかの履歴
 }

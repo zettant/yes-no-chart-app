@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentResult, saveCurrentResult, getSelectedChart } from '../storage';
 import { parseChartData } from '../api';
-import type { IResult, IChart, IQuestion, IHistory } from '../types';
+import type { IResult, IChart, IQuestion, IHistory, IPoint } from '../types';
 
 /**
  * チャート画面コンポーネント
@@ -69,6 +69,20 @@ const ChartDisplay: React.FC = () => {
   };
 
   /**
+   * 現在のポイント配列を初期化（multiタイプ用）
+   * @param chart - チャートデータ
+   * @returns 初期化されたポイント配列
+   */
+  const initializePoints = (chart: IChart): IPoint[] => {
+    // 全てのカテゴリを収集
+    const categories = Array.from(new Set(chart.questions.map(q => q.category)));
+    return categories.map(category => ({
+      category,
+      point: 0  // 初期値は0
+    }));
+  };
+
+  /**
    * 選択肢選択ハンドラー
    * @param choiceIndex - 選択された選択肢のインデックス
    */
@@ -94,16 +108,54 @@ const ChartDisplay: React.FC = () => {
       let updatedResult: IResult;
       
       if (currentQuestion.isLast) {
-        // 最終設問の場合、診断結果IDとして処理
+        // 最終設問の場合、診断結果IDを特定
         let diagnosisId: number;
         let finalPoint = currentResult.currentPoint || 0;
+        let finalPoints = currentResult.currentPoints || [];
         
-        if (chartData.type === 'point') {
-          // ポイント型チャートの場合、選択肢のポイント値を加算
+        if (chartData.type === 'decision') {
+          // decisionタイプ：遷移先がそのまま診断結果ID
+          diagnosisId = nextId;
+          
+        } else if (chartData.type === 'single') {
+          // singleタイプ：選択肢のポイント値を加算して範囲で診断結果を特定
           const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
           finalPoint += selectedPoint;
           
           // ポイント範囲で診断結果を特定
+          const diagnosis = chartData.diagnoses.find(d => 
+            finalPoint >= d.lower && finalPoint < d.upper
+          );
+          
+          if (!diagnosis) {
+            throw new Error(`ポイント${finalPoint}に対応する診断結果が見つかりません`);
+          }
+          
+          diagnosisId = diagnosis.id;
+          
+        } else if (chartData.type === 'multi') {
+          // multiタイプ：カテゴリ別にポイントを加算
+          // 初期化がされていない場合は初期化
+          if (finalPoints.length === 0) {
+            finalPoints = initializePoints(chartData);
+          }
+          
+          // 現在の設問のカテゴリにポイントを加算
+          const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
+          const targetPointIndex = finalPoints.findIndex(p => p.category === currentQuestion.category);
+          
+          if (targetPointIndex !== -1) {
+            finalPoints[targetPointIndex].point += selectedPoint;
+          }
+          
+          // multiタイプの場合、診断結果IDは選択肢の遷移先を使用
+          diagnosisId = nextId;
+          
+        } else {
+          // 旧来のpointタイプ（後方互換性のため保持）
+          const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
+          finalPoint += selectedPoint;
+          
           const diagnosis = chartData.diagnoses.find(d => 
             finalPoint >= d.lower && finalPoint <= d.upper
           );
@@ -113,15 +165,13 @@ const ChartDisplay: React.FC = () => {
           }
           
           diagnosisId = diagnosis.id;
-        } else {
-          // 判定型チャートの場合、遷移先がそのまま診断結果ID
-          diagnosisId = nextId;
         }
         
         updatedResult = {
           ...currentResult,
           diagnosisId,
           currentPoint: finalPoint,
+          currentPoints: finalPoints,
           history: updatedHistory
         };
         
@@ -141,17 +191,40 @@ const ChartDisplay: React.FC = () => {
         // 途中設問の場合、次の設問に遷移
         let nextQuestionId: number;
         let updatedPoint = currentResult.currentPoint || 0;
+        let updatedPoints = currentResult.currentPoints || [];
         
-        if (chartData.type === 'point') {
-          // ポイント型チャートの場合、選択肢のポイント値を加算
+        if (chartData.type === 'decision') {
+          // decisionタイプ：遷移先がそのまま次の設問ID
+          nextQuestionId = nextId;
+          
+        } else if (chartData.type === 'single') {
+          // singleタイプ：ポイントを加算し、次の設問は順次進行
           const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
           updatedPoint += selectedPoint;
-          
-          // 次の設問IDは現在のID + 1（順次進行）
           nextQuestionId = currentQuestion.id + 1;
+          
+        } else if (chartData.type === 'multi') {
+          // multiタイプ：カテゴリ別にポイントを加算し、次の設問は順次進行
+          // 初期化がされていない場合は初期化
+          if (updatedPoints.length === 0) {
+            updatedPoints = initializePoints(chartData);
+          }
+          
+          // 現在の設問のカテゴリにポイントを加算
+          const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
+          const targetPointIndex = updatedPoints.findIndex(p => p.category === currentQuestion.category);
+          
+          if (targetPointIndex !== -1) {
+            updatedPoints[targetPointIndex].point += selectedPoint;
+          }
+          
+          nextQuestionId = currentQuestion.id + 1;
+          
         } else {
-          // 判定型チャートの場合、遷移先がそのまま次の設問ID
-          nextQuestionId = nextId;
+          // 旧来のpointタイプ（後方互換性のため保持）
+          const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
+          updatedPoint += selectedPoint;
+          nextQuestionId = currentQuestion.id + 1;
         }
         
         const nextQuestion = chartData.questions.find(q => q.id === nextQuestionId);
@@ -164,6 +237,7 @@ const ChartDisplay: React.FC = () => {
           ...currentResult,
           currentQId: nextQuestion.id,
           currentPoint: updatedPoint,
+          currentPoints: updatedPoints,
           history: updatedHistory
         };
         
@@ -253,13 +327,8 @@ const ChartDisplay: React.FC = () => {
       {/* 進捗表示 */}
       <div className="progress-indicator">
         <p className="progress-text">
-          設問 {currentResult?.history.length || 0 + 1} / {chartData.questions.length}
+          設問 {(currentResult?.history.length || 0) + 1} / {chartData.questions.length}
         </p>
-        {chartData.type === 'point' && currentResult?.currentPoint !== undefined && (
-          <p className="point-display">
-            現在のポイント: {currentResult.currentPoint}
-          </p>
-        )}
       </div>
       
       {/* 設問文 */}

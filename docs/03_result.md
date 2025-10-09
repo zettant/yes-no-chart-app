@@ -10,13 +10,18 @@ interface IResult {
   choise: number;      // 選択番号
 }
 
-interface IResult {
+interface IPoint {
+  category: string;   // 設問カテゴリ（type=singleの場合は、"default"とする）
+  point: number;      // 設問カテゴリごとに点数を加算していく
+}
+
+interface IWholeResult {
   chartName: string;  // チャート名
   chartType: string;  // チャートタイプ
   timestamp: string;  // 開始時刻（ISO8601フォーマット）
   photo: string;      // 撮影データJPEGのBase64文字列
   currentQId?: number; // 現在の設問ID
-  currentPoint?: number; // 現時点の点数(チャートタイプ=pointの場合のみ)
+  currentPoints?: IPoint[]; // 現時点の点数(チャートタイプ=pointの場合のみ)
   diagnosisId?: number;  // 診断結果ID(結果まで到達した場合に記入)
   history: IResult[];    // 何を選択してきたかの履歴
 }

@@ -22,17 +22,6 @@ const PhotoCapture: React.FC = () => {
    * コンポーネントマウント時にリロード処理とカメラ初期化
    */
   useEffect(() => {
-    // リロード時の処理：写真登録画面でリロードされた場合はチャート選択画面に戻る
-    // ページがリロードされた場合を判定
-    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    const isReload = navigationEntry?.type === 'reload' ||
-                     (window.performance as any).navigation?.type === 1;
-    
-    if (isReload) {
-      window.location.href = '/chart/';
-      return;
-    }
-
     // 通常の画面遷移時：選択されたチャートがない場合はチャート選択画面に戻る
     const selectedChartJson = getSelectedChart();
     if (!selectedChartJson) {
