@@ -497,12 +497,12 @@
 
 /* 最高・最低スコア行の色分け */
 .multi-result-table tr.highest-score {
-  background: #e8f5e8;
+  background: #e3f2fd;
 }
 
 .multi-result-table tr.highest-score .category-name,
 .multi-result-table tr.highest-score .category-diagnosis {
-  color: #2e7d32;
+  color: #1976d2;
   font-weight: 600;
 }
 
