@@ -236,3 +236,10 @@ deploy: clean build start
 	@echo "   - チャートアプリ: http://localhost/chart"
 	@echo "   - 設定アプリ: http://localhost/setting"
 	@echo "   - REST API: http://localhost:15000/api"
+
+
+archive:
+	cd volumes && tar zcf data-`date +%s`.tar.gz db photos
+
+extract:
+	./aggregation-tool volumes/db/database.db volumes/photos output
