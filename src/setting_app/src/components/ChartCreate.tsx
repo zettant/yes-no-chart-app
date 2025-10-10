@@ -50,6 +50,15 @@ const ChartCreate: React.FC = () => {
       // CSVをチャートデータにパース
       const parsedChart = parseCSVToChart(csvText);
       
+      console.log('Parsed chart data:', parsedChart);
+      console.log('Questions with points:', parsedChart.questions.map(q => ({
+        id: q.id,
+        category: q.category,
+        points: q.points,
+        nexts: q.nexts
+      })));
+      console.log('Diagnoses:', parsedChart.diagnoses);
+      
       // 成功時、状態を更新
       setCsvFile(file);
       setChartData(parsedChart);

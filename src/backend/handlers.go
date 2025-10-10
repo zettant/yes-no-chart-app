@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -186,6 +187,7 @@ func SaveResultHandler(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		if err := db.Create(&result).Error; err != nil {
+			log.Printf("Database creation error: %v, Result data: %+v", err, result)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "診断結果の保存に失敗しました"})
 			return
 		}

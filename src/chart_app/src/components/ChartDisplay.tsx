@@ -43,6 +43,14 @@ const ChartDisplay: React.FC = () => {
       
       // チャートデータをパース
       const chart = parseChartData(selectedChartJson);
+      console.log('Loaded chart data:', chart);
+      console.log('Chart questions with points:', chart.questions.map(q => ({
+        id: q.id,
+        category: q.category,
+        isLast: q.isLast,
+        points: q.points,
+        nexts: q.nexts
+      })));
       setChartData(chart);
       
       if (savedResult) {
@@ -135,21 +143,40 @@ const ChartDisplay: React.FC = () => {
           
         } else if (chartData.type === 'multi') {
           // multiタイプ：カテゴリ別にポイントを加算
+          console.log('Multi-type final question processing:', {
+            questionId: currentQuestion.id,
+            category: currentQuestion.category,
+            choiceIndex,
+            points: currentQuestion.points,
+            finalPoints: finalPoints
+          });
+          
           // 初期化がされていない場合は初期化
           if (finalPoints.length === 0) {
             finalPoints = initializePoints(chartData);
+            console.log('Initialized points:', finalPoints);
           }
           
           // 現在の設問のカテゴリにポイントを加算
           const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
           const targetPointIndex = finalPoints.findIndex(p => p.category === currentQuestion.category);
           
+          console.log('Point calculation:', {
+            selectedPoint,
+            targetPointIndex,
+            category: currentQuestion.category
+          });
+          
           if (targetPointIndex !== -1) {
             finalPoints[targetPointIndex].point += selectedPoint;
+            console.log('Updated points:', finalPoints);
+          } else {
+            console.error('Category not found in points array:', currentQuestion.category);
           }
           
-          // multiタイプの場合、診断結果IDは選択肢の遷移先を使用
-          diagnosisId = nextId;
+          // multiタイプの場合、診断結果IDは最初の診断結果を使用（表示はポイント別ロジック）
+          diagnosisId = 1;
+          console.log('Multi-type final diagnosis ID set to:', diagnosisId);
           
         } else {
           // 旧来のpointタイプ（後方互換性のため保持）
@@ -174,6 +201,12 @@ const ChartDisplay: React.FC = () => {
           currentPoints: finalPoints,
           history: updatedHistory
         };
+        
+        console.log('Final result created:', {
+          diagnosisId,
+          currentPoints: finalPoints,
+          chartType: chartData.type
+        });
         
         // 結果画面に遷移
         setCurrentResult(updatedResult);
@@ -205,17 +238,35 @@ const ChartDisplay: React.FC = () => {
           
         } else if (chartData.type === 'multi') {
           // multiタイプ：カテゴリ別にポイントを加算し、次の設問は順次進行
+          console.log('Multi-type intermediate question processing:', {
+            questionId: currentQuestion.id,
+            category: currentQuestion.category,
+            choiceIndex,
+            points: currentQuestion.points,
+            currentPoints: updatedPoints
+          });
+          
           // 初期化がされていない場合は初期化
           if (updatedPoints.length === 0) {
             updatedPoints = initializePoints(chartData);
+            console.log('Initialized points for intermediate question:', updatedPoints);
           }
           
           // 現在の設問のカテゴリにポイントを加算
           const selectedPoint = currentQuestion.points ? currentQuestion.points[choiceIndex] : choiceIndex + 1;
           const targetPointIndex = updatedPoints.findIndex(p => p.category === currentQuestion.category);
           
+          console.log('Intermediate point calculation:', {
+            selectedPoint,
+            targetPointIndex,
+            category: currentQuestion.category
+          });
+          
           if (targetPointIndex !== -1) {
             updatedPoints[targetPointIndex].point += selectedPoint;
+            console.log('Updated intermediate points:', updatedPoints);
+          } else {
+            console.error('Category not found in intermediate points array:', currentQuestion.category);
           }
           
           nextQuestionId = currentQuestion.id + 1;

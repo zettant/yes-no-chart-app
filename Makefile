@@ -154,7 +154,6 @@ start:
 	@echo "🌐 アクセス先:"
 	@echo "   - チャートアプリ: http://localhost/chart"
 	@echo "   - 設定アプリ: http://localhost/setting"
-	@echo "   - REST API: http://localhost:15000/api"
 
 # Docker Composeでサービス停止
 .PHONY: stop

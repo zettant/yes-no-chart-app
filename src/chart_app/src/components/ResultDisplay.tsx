@@ -35,25 +35,42 @@ const ResultDisplay: React.FC = () => {
       const result = getCurrentResult();
       const selectedChartJson = getSelectedChart();
       
+      console.log('ResultDisplay initialization - localStorage data:', {
+        result,
+        selectedChartJson: selectedChartJson ? 'exists' : 'null',
+        diagnosisId: result?.diagnosisId
+      });
+      
       if (!result || !selectedChartJson) {
         // 診断結果またはチャートデータがない場合はチャート選択画面に戻る
+        console.log('Missing result or chart data, redirecting to chart selection');
         window.location.href = '/chart/';
         return;
       }
       
       // 診断結果が完了していない場合（diagnosisIdがない場合）はチャート選択画面に戻る
       if (!result.diagnosisId) {
+        console.log('Missing diagnosisId, redirecting to chart selection');
         window.location.href = '/chart/';
         return;
       }
       
       const chart = parseChartData(selectedChartJson);
+      console.log('ResultDisplay loaded chart data:', chart);
+      console.log('ResultDisplay chart type:', chart.type);
+      console.log('ResultDisplay diagnoses:', chart.diagnoses);
       setChartData(chart);
       setCurrentResult(result);
       
       // 診断結果を特定
+      console.log('Looking for diagnosis with ID:', result.diagnosisId);
+      console.log('Available diagnosis IDs:', chart.diagnoses.map(d => d.id));
+      
       const diagnosisResult = chart.diagnoses.find(d => d.id === result.diagnosisId);
       if (!diagnosisResult) {
+        console.error('Diagnosis not found for ID:', result.diagnosisId);
+        console.error('Chart diagnoses:', chart.diagnoses);
+        console.error('Result object:', result);
         throw new Error('診断結果が見つかりません');
       }
       
@@ -258,13 +275,27 @@ const ResultDisplay: React.FC = () => {
                     const maxPoint = Math.max(...points);
                     const minPoint = Math.min(...points);
                     
+                    console.log('Multi-type result display processing:', {
+                      currentPoints: currentResult.currentPoints,
+                      diagnoses: chartData.diagnoses,
+                      maxPoint,
+                      minPoint
+                    });
+                    
                     return currentResult.currentPoints.map((point: IPoint) => {
                       // 各カテゴリのポイントに対応する診断結果を特定
                       const categoryDiagnosis = chartData.diagnoses.find(d => 
                         d.category === point.category && 
                         point.point >= d.lower && 
-                        point.point < d.upper
+                        point.point <= d.upper
                       );
+                      
+                      console.log('Category diagnosis lookup:', {
+                        category: point.category,
+                        point: point.point,
+                        foundDiagnosis: categoryDiagnosis,
+                        availableDiagnoses: chartData.diagnoses.filter(d => d.category === point.category)
+                      });
                       
                       // 最高・最低ポイントに応じてCSSクラスを決定
                       let rowClass = '';

@@ -1,6 +1,6 @@
 // Service Worker for Yes/No Chart PWA
-const CACHE_NAME = 'yes-no-chart-v2';
-const APP_SHELL_CACHE = 'app-shell-v1';
+const CACHE_NAME = 'yes-no-chart-v4';
+const APP_SHELL_CACHE = 'app-shell-v4';
 
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
