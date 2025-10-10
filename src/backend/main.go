@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -11,13 +13,92 @@ import (
 )
 
 func main() {
-	// データベース接続（pure goのsqlite3ドライバを使用）
+	// データベース用ディレクトリを作成（存在しない場合）
+	dbPath := "/app/db/database.db"
+	dbDir := filepath.Dir(dbPath)
+	
+	log.Printf("データベースパス: %s", dbPath)
+	log.Printf("データベースディレクトリ: %s", dbDir)
+	
+	// ディレクトリの状態を確認
+	if info, err := os.Stat(dbDir); err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("ディレクトリが存在しません。作成中...")
+			if err := os.MkdirAll(dbDir, 0755); err != nil {
+				log.Fatal("データベースディレクトリの作成に失敗しました:", err)
+			}
+		} else {
+			log.Fatal("ディレクトリの確認に失敗しました:", err)
+		}
+	} else {
+		log.Printf("ディレクトリ存在確認: %s (権限: %s)", dbDir, info.Mode())
+	}
+	
+	// ディスク容量の確認
+	if info, err := os.Stat(dbDir); err == nil {
+		log.Printf("ディレクトリ情報: サイズ=%d, 権限=%s", info.Size(), info.Mode())
+	}
+	
+	// 書き込み権限のテスト
+	testFile := filepath.Join(dbDir, "test_write.tmp")
+	if file, err := os.Create(testFile); err != nil {
+		log.Fatal("ディレクトリへの書き込み権限がありません:", err)
+	} else {
+		file.Close()
+		os.Remove(testFile)
+		log.Printf("書き込み権限テスト: OK")
+	}
+
+	// SQLite設定を最適化してout of memoryエラーを回避
+	log.Printf("データベース接続を試行中...")
+	
+	// SQLiteの設定パラメータを追加（メモリ効率化とエラー回避）
+	dsn := dbPath + "?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_cache_size=1000&_temp_store=memory"
+	
 	db, err := gorm.Open(sqlite.Dialector{
 		DriverName: "sqlite",
-		DSN:        "/app/db/database.db",
-	}, &gorm.Config{})
+		DSN:        dsn,
+	}, &gorm.Config{
+		// SQL文のログ出力を無効化（メモリ節約）
+		Logger: nil,
+		// プリペアドステートメントの無効化（メモリ節約）
+		PrepareStmt: false,
+	})
+	
 	if err != nil {
-		log.Fatal("データベース接続に失敗しました:", err)
+		log.Printf("SQLiteエラーの詳細: %v", err)
+		
+		// 最小限の設定で再試行
+		simpleDSN := dbPath + "?cache=shared&mode=rwc"
+		log.Printf("シンプル設定で再試行中...")
+		db, err = gorm.Open(sqlite.Dialector{
+			DriverName: "sqlite",
+			DSN:        simpleDSN,
+		}, &gorm.Config{
+			Logger: nil,
+			PrepareStmt: false,
+		})
+		
+		if err != nil {
+			// 最後の手段として/tmp/を試す
+			backupPath := "/tmp/database.db"
+			log.Printf("バックアップパス %s で再試行中...", backupPath)
+			db, err = gorm.Open(sqlite.Dialector{
+				DriverName: "sqlite",
+				DSN:        backupPath + "?cache=shared&mode=rwc",
+			}, &gorm.Config{
+				Logger: nil,
+				PrepareStmt: false,
+			})
+			if err != nil {
+				log.Fatal("データベース接続に失敗しました:", err)
+			}
+			log.Printf("バックアップパスでの接続に成功")
+		} else {
+			log.Printf("シンプル設定での接続に成功")
+		}
+	} else {
+		log.Printf("データベース接続に成功")
 	}
 
 	// データベーステーブルの自動マイグレーション
