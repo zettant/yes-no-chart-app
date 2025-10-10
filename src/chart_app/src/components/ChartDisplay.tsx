@@ -360,11 +360,8 @@ const ChartDisplay: React.FC = () => {
    * メイン表示（チャート画面）
    */
   return (
-    <div className={`chart-display-container ${
-      isFinalTransition ? 'final-transition' : 
-      isTransitioning ? 'transitioning' : ''
-    }`}>
-      {/* ヘッダー */}
+    <div className="chart-display-container">
+      {/* 固定ヘッダー */}
       <div className="chart-header">
         <h2 className="chart-name">{chartData.name}</h2>
         <button 
@@ -375,32 +372,38 @@ const ChartDisplay: React.FC = () => {
         </button>
       </div>
       
-      {/* 進捗表示 */}
+      {/* 固定進捗表示 */}
       <div className="progress-indicator">
         <p className="progress-text">
           設問 {(currentResult?.history.length || 0) + 1} / {chartData.questions.length}
         </p>
       </div>
       
-      {/* 設問文 */}
-      <div className="question-container">
-        <h1 className="question-text">
-          {currentQuestion.sentence}
-        </h1>
-      </div>
-      
-      {/* 選択肢ボタン */}
-      <div className="choices-container">
-        {currentQuestion.choises.map((choice, index) => (
-          <button
-            key={index}
-            className="choice-button"
-            onClick={() => handleChoiceSelect(index)}
-            disabled={isTransitioning}
-          >
-            {choice}
-          </button>
-        ))}
+      {/* アニメーション対象となる質問エリア */}
+      <div className={`question-area ${
+        isFinalTransition ? 'final-transition' : 
+        isTransitioning ? 'transitioning' : ''
+      }`}>
+        {/* 設問文 */}
+        <div className="question-container">
+          <h1 className="question-text">
+            {currentQuestion.sentence}
+          </h1>
+        </div>
+        
+        {/* 選択肢ボタン */}
+        <div className="choices-container">
+          {currentQuestion.choises.map((choice, index) => (
+            <button
+              key={index}
+              className="choice-button"
+              onClick={() => handleChoiceSelect(index)}
+              disabled={isTransitioning}
+            >
+              {choice}
+            </button>
+          ))}
+        </div>
       </div>
       
       {/* 選択履歴表示（デバッグ用、本番では非表示） */}

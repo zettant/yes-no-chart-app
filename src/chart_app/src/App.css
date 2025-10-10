@@ -187,15 +187,24 @@
   margin: 0;
   border-radius: 0;
   min-height: 100vh;
-  justify-content: flex-start;
+  display: flex;
+  flex-direction: column;
   padding: 0;
 }
 
-.chart-display-container.transitioning {
+/* 質問エリアのアニメーション */
+.question-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.question-area.transitioning {
   animation: slideUp 0.6s ease-in-out;
 }
 
-.chart-display-container.final-transition {
+.question-area.final-transition {
   animation: blurOut 0.8s ease-in-out forwards;
 }
 
