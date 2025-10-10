@@ -222,7 +222,10 @@ const ChartCreate: React.FC = () => {
                   <div className="chart-info-item">
                     <strong>タイプ:</strong>
                     <span className={`chart-type-badge ${chartData.type}`}>
-                      {chartData.type === 'decision' ? '判定型' : 'ポイント型'}
+                      {chartData.type === 'decision' ? '分岐型' : 
+                       chartData.type === 'single' ? '単一ポイント型' : 
+                       chartData.type === 'multi' ? '複数カテゴリ型' : 
+                       chartData.type}
                     </span>
                   </div>
                   <div className="chart-info-item">
@@ -243,6 +246,9 @@ const ChartCreate: React.FC = () => {
                       <div key={question.id} className="question-item">
                         <div className="question-header">
                           <span className="question-id">設問 {question.id}</span>
+                          {question.category && question.category !== 'default' && (
+                            <span className="category-badge">[カテゴリ: {question.category}]</span>
+                          )}
                           {question.isLast && (
                             <span className="final-question-badge">最終設問</span>
                           )}
@@ -279,7 +285,10 @@ const ChartCreate: React.FC = () => {
                       <div key={diagnosis.id} className="diagnosis-item">
                         <div className="diagnosis-header">
                           <span className="diagnosis-id">結果 {diagnosis.id}</span>
-                          {chartData.type === 'point' && (
+                          {diagnosis.category && diagnosis.category !== 'default' && (
+                            <span className="category-badge">[カテゴリ: {diagnosis.category}]</span>
+                          )}
+                          {(chartData.type === 'single' || chartData.type === 'multi') && (
                             <span className="point-range">
                               {diagnosis.lower} - {diagnosis.upper} ポイント
                             </span>

@@ -148,13 +148,40 @@ func SaveResultHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// ポイント情報をJSON文字列に変換（single/multiタイプのみ）
+		var pointJSON string
+		if requestData.ChartType == "single" || requestData.ChartType == "multi" {
+			if requestData.CurrentPoints != nil && len(requestData.CurrentPoints) > 0 {
+				pointsJSON, err := json.Marshal(requestData.CurrentPoints)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "カテゴリ別ポイントの変換に失敗しました"})
+					return
+				}
+				pointJSON = string(pointsJSON)
+			} else if requestData.CurrentPoint != nil {
+				// 単一値の場合：CurrentPointをJSON化
+				pointsJSON, err := json.Marshal(*requestData.CurrentPoint)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "ポイントの変換に失敗しました"})
+					return
+				}
+				pointJSON = string(pointsJSON)
+			} else {
+				// デフォルト値
+				pointJSON = "0"
+			}
+		} else {
+			// decisionタイプの場合は空文字列
+			pointJSON = ""
+		}
+
 		// データベースに診断結果を保存
 		result := Result{
 			Timestamp:     requestData.Timestamp,
 			Passphrase:    passphrase,
 			ChartName:     requestData.ChartName,
 			ResultID:      strconv.Itoa(*requestData.DiagnosisId),
-			Point:         *requestData.CurrentPoint,
+			Point:         pointJSON,
 			ChooseHistory: string(historyJSON),
 		}
 

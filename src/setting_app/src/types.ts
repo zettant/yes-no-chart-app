@@ -5,6 +5,7 @@
 export interface IQuestion {
   id: number;       // 設問ID
   isLast: boolean;  // trueなら最終問題
+  category: string; // 問題カテゴリ（multiタイプで使用）
   sentence: string; // 設問文
   choises: string[]; // 選択肢（1〜5）
   nexts: number[];   // 遷移先の設問ID（またはisLast=trueなら診断結果ID）
@@ -14,6 +15,7 @@ export interface IQuestion {
 // 診断結果インターフェース
 export interface IDiagnosis {
   id: number;       // 診断結果ID
+  category: string; // 対象カテゴリ（multiタイプで使用）
   lower: number;    // ポイント下限
   upper: number;    // ポイント上限
   sentence: string; // 診断結果の文章
@@ -22,7 +24,7 @@ export interface IDiagnosis {
 // チャートインターフェース
 export interface IChart {
   name: string;          // チャート名
-  type: string;          // チャートタイプ（decision/point）
+  type: string;          // チャートタイプ（decision/single/multi）
   questions: IQuestion[]; // 設問一覧
   diagnoses: IDiagnosis[]; // 診断結果一覧
 }

@@ -184,7 +184,10 @@ const ChartList: React.FC = () => {
                     </td>
                     <td className="chart-type-cell">
                       <span className={`chart-type-badge ${chart.type}`}>
-                        {chart.type === 'decision' ? '判定型' : 'ポイント型'}
+                        {chart.type === 'decision' ? '分岐型' : 
+                         chart.type === 'single' ? '単一ポイント型' : 
+                         chart.type === 'multi' ? '複数カテゴリ型' : 
+                         chart.type}
                       </span>
                     </td>
                     <td className="chart-questions-cell">
@@ -217,14 +220,21 @@ const ChartList: React.FC = () => {
               <h3>CSVファイルの作成方法</h3>
               <ol>
                 <li>UTF-8 BOM付きのCSVファイルを作成してください</li>
-                <li>基本情報パート（チャート名、タイプ）</li>
+                <li>基本情報パート：チャート名、タイプ（decision/single/multi）</li>
                 <li>空行を1行挿入</li>
-                <li>設問パート（ヘッダー行 + 設問データ）</li>
+                <li>設問パート：ヘッダー行 + 設問データ（カテゴリフィールドを含む）</li>
                 <li>空行を1行挿入</li>
-                <li>診断結果パート（ヘッダー行 + 診断結果データ）</li>
+                <li>診断結果パート：ヘッダー行 + 診断結果データ（カテゴリフィールドを含む）</li>
               </ol>
+              <h4>チャートタイプの違い:</h4>
+              <ul>
+                <li><strong>decision</strong>: 選択により分岐し、最終的に1つの診断結果を表示</li>
+                <li><strong>single</strong>: ポイントを累積し、合計ポイントの範囲で診断結果を特定</li>
+                <li><strong>multi</strong>: カテゴリ別にポイントを管理し、表形式で結果を表示</li>
+              </ul>
               <p>
-                詳細な仕様については、設計ドキュメントの「chart.md」を参照してください。
+                詳細な仕様については、設計ドキュメントの「chart.md」を参照してください。<br/>
+                samples/フォルダに各タイプのサンプルCSVもあります。
               </p>
             </div>
           </details>

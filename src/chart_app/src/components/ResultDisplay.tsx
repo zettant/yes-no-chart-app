@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentResult, getSelectedChart, clearAllStorage } from '../storage';
 import { parseChartData, saveResult } from '../api';
-import type { IResult, IChart, IDiagnosis } from '../types';
+import { indexedDBHelper } from '../indexeddb';
+import type { IResult, IChart, IDiagnosis, IPoint } from '../types';
 
 /**
  * 結果表示画面コンポーネント
@@ -56,18 +57,40 @@ const ResultDisplay: React.FC = () => {
         throw new Error('診断結果が見つかりません');
       }
       
-      // ポイント型チャートの場合、ポイント範囲で診断結果を決定
-      if (chart.type === 'point' && result.currentPoint !== undefined) {
+      // チャートタイプ別の診断結果処理
+      if (chart.type === 'decision') {
+        // decisionタイプ：診断結果IDで直接特定
+        setDiagnosis(diagnosisResult);
+        
+      } else if (chart.type === 'single' && result.currentPoint !== undefined) {
+        // singleタイプ：ポイント範囲で診断結果を決定
         const pointBasedDiagnosis = chart.diagnoses.find(d => 
-          result.currentPoint! >= d.lower && result.currentPoint! <= d.upper
+          result.currentPoint! >= d.lower && result.currentPoint! < d.upper
         );
         if (pointBasedDiagnosis) {
           setDiagnosis(pointBasedDiagnosis);
         } else {
           setDiagnosis(diagnosisResult); // フォールバック
         }
-      } else {
+        
+      } else if (chart.type === 'multi') {
+        // multiタイプ：最初の診断結果をデフォルトとして設定（表示は別ロジック）
         setDiagnosis(diagnosisResult);
+        
+      } else {
+        // 旧来のpointタイプ（後方互換性のため保持）
+        if (result.currentPoint !== undefined) {
+          const pointBasedDiagnosis = chart.diagnoses.find(d => 
+            result.currentPoint! >= d.lower && result.currentPoint! <= d.upper
+          );
+          if (pointBasedDiagnosis) {
+            setDiagnosis(pointBasedDiagnosis);
+          } else {
+            setDiagnosis(diagnosisResult);
+          }
+        } else {
+          setDiagnosis(diagnosisResult);
+        }
       }
       
     } catch (err) {
@@ -92,13 +115,32 @@ const ResultDisplay: React.FC = () => {
       setIsSaving(true);
       setError(null);
       
-      // サーバーに診断結果を送信
-      await saveResult(currentResult);
-      
-      setSaveComplete(true);
-      
-      // ローカルストレージをクリア
-      clearAllStorage();
+      try {
+        // サーバーに診断結果を送信
+        await saveResult(currentResult);
+        
+        setSaveComplete(true);
+        
+        // ローカルストレージをクリア
+        clearAllStorage();
+        
+      } catch (networkError) {
+        console.warn('サーバへの送信に失敗、IndexedDBに保存:', networkError);
+        
+        // 通信不能の場合はIndexedDBに保存
+        try {
+          await indexedDBHelper.saveOfflineResult(currentResult);
+          setSaveComplete(true);
+          clearAllStorage();
+          
+          // ユーザーにオフライン保存したことを通知
+          setError('ネットワークエラーのため、結果をオフライン保存しました。次回オンライン時に自動送信されます。');
+          
+        } catch (offlineError) {
+          console.error('オフライン保存にも失敗:', offlineError);
+          throw new Error('結果の保存に失敗しました。ブラウザのストレージ容量を確認してください。');
+        }
+      }
       
       // 少し遅延してからチャート選択画面に戻る
       setTimeout(() => {
@@ -170,21 +212,103 @@ const ResultDisplay: React.FC = () => {
         
         {/* 診断結果 */}
         <div className="result-content">
-          <div className="result-diagnosis">
-            <h2 className="diagnosis-text">
-              {diagnosis.sentence}
-            </h2>
-          </div>
+          {chartData.type === 'decision' && (
+            // decisionタイプ：診断結果の文章を大きく表示
+            <div className="result-diagnosis">
+              <h2 className="diagnosis-text">
+                {diagnosis.sentence}
+              </h2>
+            </div>
+          )}
           
-          {/* ポイント表示（ポイント型の場合） */}
-          {chartData.type === 'point' && currentResult.currentPoint !== undefined && (
-            <div className="result-points">
-              <p className="points-display">
-                あなたのスコア: {currentResult.currentPoint} ポイント
-              </p>
-              <p className="points-range">
-                ({diagnosis.lower} - {diagnosis.upper} ポイントの範囲)
-              </p>
+          {chartData.type === 'single' && (
+            // singleタイプ：ポイント範囲に基づく診断結果を表示
+            <div className="result-diagnosis">
+              <h2 className="diagnosis-text">
+                {diagnosis.sentence}
+              </h2>
+              {currentResult.currentPoint !== undefined && (
+                <div className="result-points">
+                  <p className="points-display">
+                    あなたのスコア: {currentResult.currentPoint} ポイント
+                  </p>
+                  <p className="points-range">
+                    ({diagnosis.lower}以上 {diagnosis.upper}未満の範囲)
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {chartData.type === 'multi' && currentResult.currentPoints && (
+            // multiタイプ：カテゴリ別の結果を2カラム表で表示
+            <div className="result-multi">
+              <table className="multi-result-table">
+                <thead>
+                  <tr>
+                    <th>カテゴリ</th>
+                    <th>ポイント</th>
+                    <th>診断結果</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // 最高・最低ポイントを特定
+                    const points = currentResult.currentPoints.map(p => p.point);
+                    const maxPoint = Math.max(...points);
+                    const minPoint = Math.min(...points);
+                    
+                    return currentResult.currentPoints.map((point: IPoint) => {
+                      // 各カテゴリのポイントに対応する診断結果を特定
+                      const categoryDiagnosis = chartData.diagnoses.find(d => 
+                        d.category === point.category && 
+                        point.point >= d.lower && 
+                        point.point < d.upper
+                      );
+                      
+                      // 最高・最低ポイントに応じてCSSクラスを決定
+                      let rowClass = '';
+                      if (point.point === maxPoint && point.point === minPoint) {
+                        // 全て同じポイントの場合はデフォルト色
+                        rowClass = '';
+                      } else if (point.point === maxPoint) {
+                        rowClass = 'highest-score';
+                      } else if (point.point === minPoint) {
+                        rowClass = 'lowest-score';
+                      }
+                      
+                      return (
+                        <tr key={point.category} className={rowClass}>
+                          <td className="category-name">{point.category}</td>
+                          <td className="category-score">{point.point}ポイント</td>
+                          <td className="category-diagnosis">
+                            {categoryDiagnosis ? categoryDiagnosis.sentence : '診断結果なし'}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {(chartData.type === 'point' || (!chartData.type || chartData.type === '')) && (
+            // 旧来のpointタイプ（後方互換性のため保持）
+            <div className="result-diagnosis">
+              <h2 className="diagnosis-text">
+                {diagnosis.sentence}
+              </h2>
+              {currentResult.currentPoint !== undefined && (
+                <div className="result-points">
+                  <p className="points-display">
+                    あなたのスコア: {currentResult.currentPoint} ポイント
+                  </p>
+                  <p className="points-range">
+                    ({diagnosis.lower} - {diagnosis.upper} ポイントの範囲)
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -195,7 +319,7 @@ const ResultDisplay: React.FC = () => {
           <div className="summary-details">
             <p><strong>実施日時:</strong> {new Date(currentResult.timestamp).toLocaleString('ja-JP')}</p>
             <p><strong>回答数:</strong> {currentResult.history.length} 問</p>
-            {chartData.type === 'point' && (
+            {(chartData.type === 'single' || chartData.type === 'point') && currentResult.currentPoint !== undefined && (
               <p><strong>最終スコア:</strong> {currentResult.currentPoint} ポイント</p>
             )}
           </div>
