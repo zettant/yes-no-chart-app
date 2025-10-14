@@ -121,6 +121,7 @@
   overflow: hidden;
   background: #f5f5f5;
   aspect-ratio: 4/3;
+  position: relative; /* カメラ切り替えボタンの絶対配置用 */
 }
 
 .camera-video,
@@ -179,6 +180,42 @@
   margin-top: 15px;
   color: #666;
   font-size: 0.9em;
+}
+
+/* カメラ切り替えボタン */
+.camera-switch-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.camera-switch-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.camera-switch-button:active {
+  transform: scale(0.95);
+}
+
+.camera-switch-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* チャート表示画面 */

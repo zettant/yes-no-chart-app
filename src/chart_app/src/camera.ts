@@ -4,17 +4,23 @@
  */
 
 /**
+ * カメラの種類を表すタイプ
+ */
+export type CameraFacingMode = 'user' | 'environment';
+
+/**
  * カメラストリームを取得
+ * @param facingMode カメラの向き ('user': インカメラ, 'environment': バックカメラ)
  * @returns MediaStream オブジェクト
  */
-export const getCameraStream = async (): Promise<MediaStream> => {
+export const getCameraStream = async (facingMode: CameraFacingMode = 'environment'): Promise<MediaStream> => {
   try {
     // ユーザーのカメラにアクセス許可を要求
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         width: { ideal: 1280 },  // 理想的な幅
         height: { ideal: 720 },  // 理想的な高さ
-        facingMode: 'environment' // 背面カメラを優先（名刺撮影用）
+        facingMode: facingMode   // カメラの向きを指定
       },
       audio: false // 音声は不要
     });

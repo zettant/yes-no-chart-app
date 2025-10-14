@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCameraStream, stopCameraStream, capturePhotoFromVideo } from '../camera';
+import { getCameraStream, stopCameraStream, capturePhotoFromVideo, type CameraFacingMode } from '../camera';
 import { getSelectedChart, saveCurrentResult, getCurrentResult } from '../storage';
 import type { IResult } from '../types';
 
@@ -17,6 +17,7 @@ const PhotoCapture: React.FC = () => {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null); // 撮影された写真のBase64データ
   const [error, setError] = useState<string | null>(null);              // エラーメッセージ
   const [isProcessing, setIsProcessing] = useState<boolean>(false);     // 処理中状態
+  const [currentFacingMode, setCurrentFacingMode] = useState<CameraFacingMode>('environment'); // 現在のカメラの向き
 
   /**
    * コンポーネントマウント時にリロード処理とカメラ初期化
@@ -43,16 +44,24 @@ const PhotoCapture: React.FC = () => {
   /**
    * カメラストリームを初期化
    */
-  const initializeCamera = async () => {
+  const initializeCamera = async (facingMode: CameraFacingMode = currentFacingMode) => {
     try {
-      console.log('カメラ初期化開始...');
+      console.log('カメラ初期化開始...', facingMode);
       setError(null);
+      
+      // 既存のストリームがあれば停止
+      if (streamRef.current) {
+        stopCameraStream(streamRef.current);
+        streamRef.current = null;
+        setIsStreaming(false);
+      }
       
       // カメラストリームを取得
       console.log('カメラストリーム取得中...');
-      const stream = await getCameraStream();
+      const stream = await getCameraStream(facingMode);
       console.log('カメラストリーム取得完了:', stream);
       streamRef.current = stream;
+      setCurrentFacingMode(facingMode);
 
       // video要素にストリームを設定
       if (videoRef.current) {
@@ -134,7 +143,22 @@ const PhotoCapture: React.FC = () => {
   const handleRetake = () => {
     setCapturedPhoto(null);
     setError(null);
-    initializeCamera();
+    initializeCamera(currentFacingMode);
+  };
+
+  /**
+   * カメラ切り替えハンドラー
+   * インカメラとバックカメラを切り替え
+   */
+  const handleSwitchCamera = async () => {
+    try {
+      const newFacingMode: CameraFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+      await initializeCamera(newFacingMode);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'カメラの切り替えに失敗しました';
+      setError(errorMessage);
+      console.error('カメラ切り替えエラー:', err);
+    }
   };
 
   /**
@@ -201,7 +225,7 @@ const PhotoCapture: React.FC = () => {
           <div className="error-actions">
             <button 
               className="retry-button"
-              onClick={initializeCamera}
+              onClick={() => initializeCamera()}
             >
               カメラを再試行
             </button>
@@ -246,6 +270,18 @@ const PhotoCapture: React.FC = () => {
             muted
             style={{ display: isStreaming && !capturedPhoto ? 'block' : 'none' }}
           />
+          
+          {/* カメラ切り替えボタン（撮影前のみ表示） */}
+          {isStreaming && !capturedPhoto && (
+            <button
+              className="camera-switch-button"
+              onClick={handleSwitchCamera}
+              disabled={isProcessing}
+              title={currentFacingMode === 'environment' ? 'インカメラに切り替え' : 'バックカメラに切り替え'}
+            >
+              📷
+            </button>
+          )}
           
           {capturedPhoto && (
             <img
